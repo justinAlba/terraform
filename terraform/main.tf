@@ -9,7 +9,7 @@ locals {
 }
 
 # =============================================================================
-# S3: paquete de la Lambda (privado) y archivos subidos por la app (lectura publica)
+# S3: paquete de la Lambda (privado) y archivos subidos por la app (privado, URLs firmadas)
 # =============================================================================
 
 # El zip de Spring Boot pesa ~55 MB, mas que el limite de subida directa (50 MB),
@@ -46,30 +46,13 @@ resource "aws_s3_bucket_ownership_controls" "uploads" {
   }
 }
 
-# Solo se permite la politica publica (no ACLs), y solo para el prefijo uploads/.
+# Bucket privado: la API devuelve URLs firmadas temporales para ver los archivos.
 resource "aws_s3_bucket_public_access_block" "uploads" {
   bucket                  = aws_s3_bucket.uploads.id
   block_public_acls       = true
   ignore_public_acls      = true
-  block_public_policy     = false
-  restrict_public_buckets = false
-}
-
-resource "aws_s3_bucket_policy" "uploads_public_read" {
-  bucket = aws_s3_bucket.uploads.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Sid       = "PublicReadUploads"
-      Effect    = "Allow"
-      Principal = "*"
-      Action    = "s3:GetObject"
-      Resource  = "${aws_s3_bucket.uploads.arn}/uploads/*"
-    }]
-  })
-
-  depends_on = [aws_s3_bucket_public_access_block.uploads]
+  block_public_policy     = true
+  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_cors_configuration" "uploads" {
@@ -122,9 +105,10 @@ data "aws_iam_policy_document" "lambda_permissions" {
     resources = ["${aws_cloudwatch_log_group.lambda.arn}:*"]
   }
 
+  # GetObject es necesario para que las URLs firmadas por la Lambda sean validas.
   statement {
-    sid       = "PutUploads"
-    actions   = ["s3:PutObject"]
+    sid       = "ReadWriteUploads"
+    actions   = ["s3:PutObject", "s3:GetObject"]
     resources = ["${aws_s3_bucket.uploads.arn}/uploads/*"]
   }
 }
