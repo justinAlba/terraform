@@ -1,0 +1,233 @@
+name: Deploy Serverless (Terraform + Lambda)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nunca dos despliegues a la vez sobre el mismo estado de Terraform.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BACKEND_DIR: Actividad_API_BACKEND
+  TF_DIR: terraform
+  TF_VERSION: 1.16.5
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+  TF_VAR_database_url: ${{ secrets.DATABASE_URL }}
+  TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.BACKEND_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Instalar dependencias
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -q -Plambda dependency:go-offline
+
+      - name: Construir proyecto
+        run: ./mvnw -B -Plambda compile
+
+      - name: Empaquetar Lambda
+        run: |
+          ./mvnw -B -Plambda package -DskipTests
+          ls -lh target/api-lambda.zip
+
+      - name: Publicar paquete como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-lambda
+          path: ${{ env.BACKEND_DIR }}/target/api-lambda.zip
+          retention-days: 7
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
+    defaults:
+      run:
+        working-directory: ${{ env.BACKEND_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Ejecutar pruebas
+        run: |
+          chmod +x mvnw
+          ./mvnw -B test
+
+      - name: Guardar reportes de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportes-pruebas
+          path: ${{ env.BACKEND_DIR }}/target/surefire-reports/
+          retention-days: 7
+
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    defaults:
+      run:
+        working-directory: ${{ env.TF_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar paquete de la Lambda
+        uses: actions/download-artifact@v4
+        with:
+          name: api-lambda
+          path: ${{ env.BACKEND_DIR }}/target
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: bash scripts/init-backend.sh
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: terraform validate
+        run: terraform validate
+
+      - name: terraform plan
+        run: terraform plan -input=false -no-color
+
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    # Los pull requests solo llegan hasta el plan; se aplica al hacer push a main.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    defaults:
+      run:
+        working-directory: ${{ env.TF_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar paquete de la Lambda
+        uses: actions/download-artifact@v4
+        with:
+          name: api-lambda
+          path: ${{ env.BACKEND_DIR }}/target
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: bash scripts/init-backend.sh
+
+      - name: terraform apply
+        run: terraform apply -auto-approve -input=false -no-color
+
+  deploy-lambda:
+    name: Deploy Lambda
+    runs-on: ubuntu-latest
+    needs: terraform-apply
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      # Se leen aqui y no como outputs del job anterior: GitHub descarta los outputs
+      # que contienen el valor de un secret, y la URL incluye la region (AWS_REGION).
+      - name: Leer outputs de Terraform
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          bash scripts/init-backend.sh > /dev/null
+          echo "API_URL=$(terraform output -raw api_url)" >> "$GITHUB_ENV"
+          echo "LAMBDA_NAME=$(terraform output -raw lambda_function_name)" >> "$GITHUB_ENV"
+          echo "LAMBDA_VERSION=$(terraform output -raw lambda_live_version)" >> "$GITHUB_ENV"
+
+      - name: Esperar a que la nueva version este activa
+        run: |
+          aws lambda wait function-active-v2 --function-name "$LAMBDA_NAME" --qualifier "$LAMBDA_VERSION"
+          aws lambda get-alias --function-name "$LAMBDA_NAME" --name live \
+            --query '{alias:Name,version:FunctionVersion}' --output table
+
+      - name: Prueba de humo contra API Gateway
+        run: |
+          # Credenciales invalidas: si la Lambda responde 401, Spring Boot,
+          # la conexion a la base de datos y API Gateway estan funcionando.
+          for intento in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 35 \
+              -X POST "${API_URL}/api/auth/login" \
+              -H 'Content-Type: application/json' \
+              -d '{"email":"smoke@test.com","password":"no-existe"}')
+            echo "Intento $intento: HTTP $STATUS"
+            if [ "$STATUS" = "401" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "La API no respondio como se esperaba"
+          exit 1
+
+      - name: Resumen del despliegue
+        run: |
+          {
+            echo "## Despliegue completado"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| API URL | \`${API_URL}\` |"
+            echo "| Lambda | \`${LAMBDA_NAME}\` (version ${LAMBDA_VERSION}, alias \`live\`) |"
+            echo ""
+            echo "Configura esta URL en \`appMovil/src/environments/environment.prod.ts\`:"
+            echo "\`npm run set-api-url -- ${API_URL}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
