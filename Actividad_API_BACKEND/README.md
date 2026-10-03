@@ -61,6 +61,18 @@ Variables configurables en `docker-compose.yml`: `JWT_SECRET`, `JWT_EXPIRATION_M
 
 Para detener: `docker compose down` (agrega `-v` si tambien quieres borrar los volumenes de datos).
 
+## Despliegue en AWS Lambda
+
+`./mvnw -Plambda package` genera `target/api-lambda.zip` (handler `com.utesa.api.lambda.StreamLambdaHandler::handleRequest`). La infraestructura y el pipeline estan en `../terraform` y `../.github/workflows/deploy.yml` (ver `../README.md`).
+
+Variables adicionales:
+| Variable | Descripción | Por defecto |
+|---|---|---|
+| `DATABASE_URL` | URL estilo Neon `postgresql://user:pass@host/db?sslmode=require`; si existe, reemplaza a `DB_HOST`/`DB_USER`/... | sin definir |
+| `APP_STORAGE` | `local` (disco) o `s3` | `local` |
+| `S3_BUCKET` / `S3_PREFIX` | Bucket y prefijo para los uploads cuando `APP_STORAGE=s3` | vacio / `uploads/` |
+| `DB_POOL_SIZE` | Conexiones maximas de Hikari | `10` |
+
 ## Endpoints
 
 | Método | Ruta | Token | Body |
