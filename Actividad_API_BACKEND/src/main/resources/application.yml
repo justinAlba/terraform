@@ -8,6 +8,8 @@ spring:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:actividad_api}
     username: ${DB_USER:admin}
     password: ${DB_PASSWORD:nohaymana}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
   jpa:
     hibernate:
       ddl-auto: update
@@ -27,3 +29,8 @@ jwt:
 
 app:
   upload-dir: ${UPLOAD_DIR:uploads}
+  # local = disco (local / Docker), s3 = bucket S3 (Lambda)
+  storage: ${APP_STORAGE:local}
+  s3:
+    bucket: ${S3_BUCKET:}
+    prefix: ${S3_PREFIX:uploads/}
