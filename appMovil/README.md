@@ -15,6 +15,17 @@ En `src/environments/environment.ts`:
 - Emulador Android: `http://10.0.2.2:8080`
 - Dispositivo fisico: IP de la maquina donde corre el backend, ej. `http://192.168.1.100:8080`
 
+### Backend en AWS (API Gateway)
+
+`environment.prod.ts` apunta a la URL de API Gateway. Despues de cada despliegue nuevo de la infraestructura:
+
+```bash
+npm run set-api-url -- https://<api-id>.execute-api.us-east-1.amazonaws.com
+npm run start:aws     # ng serve con la configuracion de produccion
+```
+
+`ng build` (y por lo tanto el APK) usa la configuracion de produccion.
+
 ## Ejecutar
 
 ```bash

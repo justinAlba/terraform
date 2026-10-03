@@ -6,7 +6,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:aws": "ng serve --configuration production",
     "build": "ng build",
+    "set-api-url": "node scripts/set-api-url.mjs",
     "watch": "ng build --watch --configuration development"
   },
   "private": true,
