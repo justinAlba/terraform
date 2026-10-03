@@ -1,0 +1,56 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Subir archivo</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-button expand="block" (click)="tomarOSeleccionarFoto()">
+    <ion-icon slot="start" name="camera-outline"></ion-icon>
+    Tomar o elegir imagen
+  </ion-button>
+
+  <ion-item lines="none" class="ion-margin-top">
+    <ion-label>O elegir un documento</ion-label>
+    <input type="file" (change)="onDocumentoSeleccionado($event)" />
+  </ion-item>
+
+  <div class="preview ion-text-center ion-margin-top" *ngIf="nombreArchivo">
+    <img *ngIf="esImagen && previewUrl" [src]="previewUrl" alt="preview" />
+    <ion-item lines="none" *ngIf="!esImagen">
+      <ion-icon slot="start" name="document-outline"></ion-icon>
+      <ion-label>{{ nombreArchivo }}</ion-label>
+    </ion-item>
+  </div>
+
+  <ion-button
+    expand="block"
+    class="ion-margin-top"
+    [disabled]="!nombreArchivo || (subiendo$ | async)"
+    (click)="subir()"
+  >
+    Subir
+  </ion-button>
+
+  <div *ngIf="subiendo$ | async" class="ion-margin-top">
+    <ion-progress-bar [value]="(progreso$ | async)! / 100"></ion-progress-bar>
+    <p class="ion-text-center">{{ progreso$ | async }}%</p>
+  </div>
+
+  <ion-text color="danger" *ngIf="error$ | async as error">
+    <p>{{ error }}</p>
+  </ion-text>
+
+  <ion-card *ngIf="resultado$ | async as resultado" color="success">
+    <ion-card-header>
+      <ion-card-title>Archivo subido</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>{{ resultado.filename }}</p>
+      <img *ngIf="esImagen" [src]="urlCompleta(resultado.url)" alt="archivo subido" />
+    </ion-card-content>
+  </ion-card>
+</ion-content>

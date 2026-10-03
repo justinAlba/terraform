@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: actividad-api-backend
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:actividad_api}
+    username: ${DB_USER:admin}
+    password: ${DB_PASSWORD:nohaymana}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+jwt:
+  secret: ${JWT_SECRET:Q0p29m+qFgeRAT4qopoPBBbMDQZsCM4RnqYOTOqhE+xsz8JMDqoQTgnHNbCAOxUnho7HaBIvGH+fBF1H4nSRHg}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+
+app:
+  upload-dir: ${UPLOAD_DIR:uploads}

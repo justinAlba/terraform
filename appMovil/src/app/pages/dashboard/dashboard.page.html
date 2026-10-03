@@ -1,0 +1,55 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Dashboard</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="cerrarSesion()">
+        <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="ion-text-center ion-padding" *ngIf="cargando$ | async">
+    <ion-spinner name="dots"></ion-spinner>
+  </div>
+
+  <ion-text color="danger" *ngIf="error$ | async as error">
+    <p>{{ error }}</p>
+  </ion-text>
+
+  <ng-container *ngIf="estado$ | async as estado">
+    <ion-card *ngIf="estado.perfil as perfil">
+      <ion-card-header>
+        <ion-card-subtitle>Mi perfil</ion-card-subtitle>
+        <ion-card-title>{{ perfil.nombre }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        {{ perfil.email }} &middot; Rol: {{ perfil.rol }}
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="estado.configuracion as configuracion">
+      <ion-card-header>
+        <ion-card-subtitle>Configuracion</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        Tema: {{ configuracion.tema }} &middot; Idioma: {{ configuracion.idioma }} &middot;
+        Notificaciones: {{ configuracion.notificacionesActivas ? 'activas' : 'inactivas' }}
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card>
+      <ion-card-header>
+        <ion-card-subtitle>Usuarios registrados ({{ estado.usuarios.length }})</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-button expand="block" (click)="irAUsuarios()">Ver todos los usuarios</ion-button>
+      </ion-card-content>
+    </ion-card>
+  </ng-container>
+
+  <ion-button expand="block" fill="outline" (click)="irASubirArchivo()">
+    Subir archivo
+  </ion-button>
+</ion-content>

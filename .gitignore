@@ -1,0 +1,14 @@
+# Entregas comprimidas y documentos de otras actividades
+*.rar
+*.zip
+*.pdf
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+tfplan
+
+# Sistema
+.DS_Store
+Thumbs.db

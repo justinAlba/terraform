@@ -1,0 +1,44 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/login"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Configurar servidor</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <ion-item>
+      <ion-label position="floating">URL del backend</ion-label>
+      <ion-input formControlName="host" placeholder="http://192.168.1.19:8080"></ion-input>
+    </ion-item>
+
+    <ion-button expand="block" fill="outline" class="ion-margin-top" type="button" (click)="probar()">
+      Probar conexion
+    </ion-button>
+
+    <ion-text
+      *ngIf="estadoPrueba$ | async as estado"
+      [color]="estado === 'ok' ? 'success' : estado === 'error' ? 'danger' : 'medium'"
+    >
+      <p class="ion-text-center">
+        <span *ngIf="estado === 'probando'">Probando...</span>
+        <span *ngIf="estado === 'ok'">El servidor respondio correctamente.</span>
+        <span *ngIf="estado === 'error'">No se pudo contactar ese servidor.</span>
+      </p>
+    </ion-text>
+
+    <ion-button expand="block" type="submit" class="ion-margin-top">
+      Guardar
+    </ion-button>
+
+    <ion-button expand="block" fill="clear" type="button" (click)="restablecer()">
+      Restablecer valor por defecto
+    </ion-button>
+
+    <ion-text color="success" *ngIf="guardado$ | async">
+      <p class="ion-text-center">Guardado. Los proximos pedidos usaran esta URL.</p>
+    </ion-text>
+  </form>
+</ion-content>
