@@ -12,8 +12,6 @@ locals {
 # S3: paquete de la Lambda (privado) y archivos subidos por la app (privado, URLs firmadas)
 # =============================================================================
 
-# El zip de Spring Boot pesa ~55 MB, mas que el limite de subida directa (50 MB),
-# por eso Lambda lo toma desde S3.
 resource "aws_s3_bucket" "artifacts" {
   bucket        = "${local.name}-artifacts-${local.account_id}"
   force_destroy = true
