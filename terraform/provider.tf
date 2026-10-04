@@ -8,9 +8,7 @@ terraform {
     }
   }
 
-  # Estado remoto en S3 (con bloqueo nativo por lockfile). El bucket y la key se
-  # pasan en `terraform init -backend-config=...` desde scripts/init-backend.sh,
-  # porque dependen de la cuenta de AWS donde se despliega.
+
   backend "s3" {}
 }
 
