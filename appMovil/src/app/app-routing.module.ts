@@ -45,6 +45,12 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'notificaciones',
+    loadChildren: () =>
+      import('./pages/notificaciones/notificaciones.module').then((m) => m.NotificacionesPageModule),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'settings',
     loadChildren: () => import('./pages/settings/settings.module').then( m => m.SettingsPageModule)
   },

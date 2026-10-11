@@ -33,6 +33,10 @@ export class DashboardPage {
     this.router.navigateByUrl('/upload');
   }
 
+  irANotificaciones(): void {
+    this.router.navigateByUrl('/notificaciones');
+  }
+
   async cerrarSesion(): Promise<void> {
     await this.authRepository.logout();
     this.router.navigateByUrl('/login');

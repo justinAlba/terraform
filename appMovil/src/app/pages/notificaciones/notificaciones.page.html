@@ -1,0 +1,49 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Enviar correo</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <ion-item>
+      <ion-label position="floating">Correo destino</ion-label>
+      <ion-input type="email" formControlName="email" autocomplete="email" inputmode="email"></ion-input>
+    </ion-item>
+    <ion-text color="danger" *ngIf="form.controls.email.touched && form.controls.email.invalid">
+      <p class="campo-error">Ingresa un correo valido.</p>
+    </ion-text>
+
+    <ion-item>
+      <ion-label position="floating">Asunto</ion-label>
+      <ion-input formControlName="subject" maxlength="150"></ion-input>
+    </ion-item>
+    <ion-text color="danger" *ngIf="form.controls.subject.touched && form.controls.subject.invalid">
+      <p class="campo-error">El asunto es obligatorio.</p>
+    </ion-text>
+
+    <ion-item>
+      <ion-label position="floating">Mensaje</ion-label>
+      <ion-textarea formControlName="message" [autoGrow]="true" rows="5" maxlength="5000"></ion-textarea>
+    </ion-item>
+    <ion-text color="danger" *ngIf="form.controls.message.touched && form.controls.message.invalid">
+      <p class="campo-error">El mensaje es obligatorio.</p>
+    </ion-text>
+
+    <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="(enviando$ | async)">
+      <ion-spinner *ngIf="enviando$ | async" name="dots"></ion-spinner>
+      <span *ngIf="!(enviando$ | async)">Enviar</span>
+    </ion-button>
+  </form>
+
+  <ion-card *ngIf="exito$ | async as exito" color="success">
+    <ion-card-content>{{ exito }}</ion-card-content>
+  </ion-card>
+
+  <ion-card *ngIf="error$ | async as error" color="danger">
+    <ion-card-content>{{ error }}</ion-card-content>
+  </ion-card>
+</ion-content>
