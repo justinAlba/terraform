@@ -23,6 +23,7 @@ env:
   TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
   TF_VAR_database_url: ${{ secrets.DATABASE_URL }}
   TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+  TF_VAR_notification_sender_email: ${{ secrets.NOTIFICATION_SENDER_EMAIL }}
   TF_IN_AUTOMATION: "true"
 
 jobs:
@@ -82,6 +83,10 @@ jobs:
         run: |
           chmod +x mvnw
           ./mvnw -B test
+
+      - name: Verificar sintaxis de notification-lambda
+        working-directory: notification-lambda
+        run: python3 -m py_compile handler.py
 
       - name: Guardar reportes de pruebas
         if: always()
@@ -195,12 +200,28 @@ jobs:
           echo "API_URL=$(terraform output -raw api_url)" >> "$GITHUB_ENV"
           echo "LAMBDA_NAME=$(terraform output -raw lambda_function_name)" >> "$GITHUB_ENV"
           echo "LAMBDA_VERSION=$(terraform output -raw lambda_live_version)" >> "$GITHUB_ENV"
+          echo "SNS_TOPIC_ARN=$(terraform output -raw sns_topic_arn)" >> "$GITHUB_ENV"
+          echo "SQS_QUEUE_URL=$(terraform output -raw sqs_queue_url)" >> "$GITHUB_ENV"
+          echo "NOTIFICATION_LAMBDA=$(terraform output -raw notification_lambda_name)" >> "$GITHUB_ENV"
 
       - name: Esperar a que la nueva version este activa
         run: |
           aws lambda wait function-active-v2 --function-name "$LAMBDA_NAME" --qualifier "$LAMBDA_VERSION"
           aws lambda get-alias --function-name "$LAMBDA_NAME" --name live \
             --query '{alias:Name,version:FunctionVersion}' --output table
+
+      - name: Verificar flujo de notificaciones (SNS -> SQS -> Lambda)
+        run: |
+          aws lambda wait function-active-v2 --function-name "$NOTIFICATION_LAMBDA"
+          QUEUE_ARN=$(aws sqs get-queue-attributes --queue-url "$SQS_QUEUE_URL" \
+            --attribute-names QueueArn --query 'Attributes.QueueArn' --output text)
+          echo "Suscripciones del topic:"
+          aws sns list-subscriptions-by-topic --topic-arn "$SNS_TOPIC_ARN" \
+            --query 'Subscriptions[].{protocolo:Protocol,destino:Endpoint}' --output table
+          echo "Event source mapping SQS -> Lambda:"
+          aws lambda list-event-source-mappings --function-name "$NOTIFICATION_LAMBDA" \
+            --event-source-arn "$QUEUE_ARN" \
+            --query 'EventSourceMappings[].{estado:State,lote:BatchSize}' --output table
 
       - name: Prueba de humo contra API Gateway
         run: |
@@ -227,6 +248,9 @@ jobs:
             echo "|---|---|"
             echo "| API URL | \`${API_URL}\` |"
             echo "| Lambda | \`${LAMBDA_NAME}\` (version ${LAMBDA_VERSION}, alias \`live\`) |"
+            echo "| SNS Topic | \`${SNS_TOPIC_ARN}\` |"
+            echo "| SQS Queue | \`${SQS_QUEUE_URL}\` |"
+            echo "| Notification Lambda | \`${NOTIFICATION_LAMBDA}\` |"
             echo ""
             echo "Configura esta URL en \`appMovil/src/environments/environment.prod.ts\`:"
             echo "\`npm run set-api-url -- ${API_URL}\`"

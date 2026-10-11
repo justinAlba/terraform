@@ -4,3 +4,4 @@
 *.tfplan
 tfplan
 crash.log
+build/

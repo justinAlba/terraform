@@ -68,6 +68,38 @@ variable "throttling_burst_limit" {
 }
 
 # ---------------------------------------------------------------------------
+# Notificaciones: SNS -> SQS -> notification-lambda -> SES
+# ---------------------------------------------------------------------------
+
+variable "notification_lambda_name" {
+  description = "Nombre de la Lambda que consume la cola SQS y envia los correos."
+  type        = string
+  default     = "notification-lambda"
+}
+
+variable "notification_lambda_timeout_seconds" {
+  description = "Timeout de la Lambda de notificaciones. La visibilidad de la cola SQS es 6 veces este valor."
+  type        = number
+  default     = 30
+}
+
+variable "notification_sender_email" {
+  description = "Remitente de los correos (identidad SES). En CI llega desde el secret NOTIFICATION_SENDER_EMAIL (TF_VAR_notification_sender_email)."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.notification_sender_email))
+    error_message = "notification_sender_email debe ser un correo valido."
+  }
+}
+
+variable "notification_test_recipients" {
+  description = "Destinatarios a verificar en SES. Mientras la cuenta este en el sandbox de SES solo se puede enviar a correos verificados."
+  type        = list(string)
+  default     = []
+}
+
+# ---------------------------------------------------------------------------
 # Secretos: NO van en terraform.tfvars. En CI llegan desde GitHub Secrets como
 # TF_VAR_database_url y TF_VAR_jwt_secret.
 # ---------------------------------------------------------------------------

@@ -6,6 +6,11 @@ locals {
 
   lambda_name    = "${local.name}-api"
   lambda_handler = "com.utesa.api.lambda.StreamLambdaHandler::handleRequest"
+
+  notification_lambda_name = var.notification_lambda_name
+
+  # En el sandbox de SES el destinatario tambien debe estar verificado.
+  ses_recipient_identities = setsubtract(toset(var.notification_test_recipients), [var.notification_sender_email])
 }
 
 # =============================================================================
@@ -109,6 +114,12 @@ data "aws_iam_policy_document" "lambda_permissions" {
     actions   = ["s3:PutObject", "s3:GetObject"]
     resources = ["${aws_s3_bucket.uploads.arn}/uploads/*"]
   }
+
+  statement {
+    sid       = "PublishNotifications"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.notifications.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "lambda" {
@@ -148,14 +159,16 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      DATABASE_URL      = var.database_url
-      JWT_SECRET        = var.jwt_secret
-      JWT_EXPIRATION_MS = tostring(var.jwt_expiration_ms)
-      APP_STORAGE       = "s3"
-      S3_BUCKET         = aws_s3_bucket.uploads.id
-      S3_PREFIX         = "uploads/"
-      DB_POOL_SIZE      = "2"
-      JAVA_TOOL_OPTIONS = "-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
+      DATABASE_URL           = var.database_url
+      JWT_SECRET             = var.jwt_secret
+      JWT_EXPIRATION_MS      = tostring(var.jwt_expiration_ms)
+      APP_STORAGE            = "s3"
+      S3_BUCKET              = aws_s3_bucket.uploads.id
+      S3_PREFIX              = "uploads/"
+      NOTIFICATIONS_PROVIDER = "sns"
+      SNS_TOPIC_ARN          = aws_sns_topic.notifications.arn
+      DB_POOL_SIZE           = "2"
+      JAVA_TOOL_OPTIONS      = "-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
     }
   }
 
@@ -244,4 +257,219 @@ resource "aws_lambda_permission" "api_gateway" {
   qualifier     = aws_lambda_alias.live.name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
+}
+
+# =============================================================================
+# Mensajeria desacoplada: API -> SNS -> SQS -> notification-lambda -> SES (correo)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SNS Topic: la Lambda principal publica aqui cada correo a enviar
+# -----------------------------------------------------------------------------
+
+resource "aws_sns_topic" "notifications" {
+  name = "${local.name}-notifications"
+}
+
+# -----------------------------------------------------------------------------
+# SQS Queue (+ DLQ): amortigua los mensajes hasta que la Lambda los procesa
+# -----------------------------------------------------------------------------
+
+resource "aws_sqs_queue" "notifications_dlq" {
+  name                      = "${local.name}-notifications-dlq"
+  message_retention_seconds = 1209600 # 14 dias para revisar los mensajes que fallaron
+  sqs_managed_sse_enabled   = true
+}
+
+resource "aws_sqs_queue" "notifications" {
+  name                      = "${local.name}-notifications"
+  message_retention_seconds = 345600 # 4 dias
+  receive_wait_time_seconds = 20     # long polling
+  sqs_managed_sse_enabled   = true
+  # AWS recomienda al menos 6 veces el timeout de la Lambda que consume la cola.
+  visibility_timeout_seconds = var.notification_lambda_timeout_seconds * 6
+
+  # Tras 3 intentos fallidos el mensaje pasa a la DLQ en vez de reintentarse para siempre.
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.notifications_dlq.arn
+    maxReceiveCount     = 3
+  })
+}
+
+resource "aws_sqs_queue_redrive_allow_policy" "notifications_dlq" {
+  queue_url = aws_sqs_queue.notifications_dlq.id
+  redrive_allow_policy = jsonencode({
+    redrivePermission = "byQueue"
+    sourceQueueArns   = [aws_sqs_queue.notifications.arn]
+  })
+}
+
+# Solo el topic de notificaciones puede escribir en la cola.
+data "aws_iam_policy_document" "notifications_queue" {
+  statement {
+    sid       = "AllowSnsTopic"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.notifications.arn]
+
+    principals {
+      type        = "Service"
+      identifiers = ["sns.amazonaws.com"]
+    }
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_sns_topic.notifications.arn]
+    }
+  }
+}
+
+resource "aws_sqs_queue_policy" "notifications" {
+  queue_url = aws_sqs_queue.notifications.id
+  policy    = data.aws_iam_policy_document.notifications_queue.json
+}
+
+# -----------------------------------------------------------------------------
+# Suscripcion SNS -> SQS
+# -----------------------------------------------------------------------------
+
+resource "aws_sns_topic_subscription" "notifications_sqs" {
+  topic_arn = aws_sns_topic.notifications.arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.notifications.arn
+
+  # Sin la politica de la cola, SNS no puede entregar los mensajes.
+  depends_on = [aws_sqs_queue_policy.notifications]
+}
+
+# -----------------------------------------------------------------------------
+# SES: identidades de correo. AWS envia un correo de verificacion a cada direccion
+# y hay que abrir el enlace antes de poder enviar (o, en sandbox, recibir).
+# -----------------------------------------------------------------------------
+
+resource "aws_sesv2_email_identity" "sender" {
+  email_identity = var.notification_sender_email
+}
+
+resource "aws_sesv2_email_identity" "test_recipients" {
+  for_each       = local.ses_recipient_identities
+  email_identity = each.value
+}
+
+# -----------------------------------------------------------------------------
+# CloudWatch Logs + IAM de la Lambda de notificaciones
+# -----------------------------------------------------------------------------
+
+resource "aws_cloudwatch_log_group" "notification_lambda" {
+  name              = "/aws/lambda/${local.notification_lambda_name}"
+  retention_in_days = var.log_retention_days
+}
+
+resource "aws_iam_role" "notification_lambda" {
+  name               = "${local.name}-notification-lambda-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+}
+
+data "aws_iam_policy_document" "notification_lambda_permissions" {
+  statement {
+    sid       = "WriteLogs"
+    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["${aws_cloudwatch_log_group.notification_lambda.arn}:*"]
+  }
+
+  statement {
+    sid = "ConsumeQueue"
+    actions = [
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes",
+      "sqs:ChangeMessageVisibility",
+    ]
+    resources = [aws_sqs_queue.notifications.arn]
+  }
+
+  # SES valida el permiso contra la identidad remitente y, en sandbox, tambien
+  # contra la del destinatario; por eso el recurso es identity/* pero el
+  # remitente queda fijado con la condicion.
+  statement {
+    sid       = "SendEmail"
+    actions   = ["ses:SendEmail"]
+    resources = ["arn:aws:ses:${var.aws_region}:${local.account_id}:identity/*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "ses:FromAddress"
+      values   = [var.notification_sender_email]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "notification_lambda" {
+  name   = "${local.name}-notification-lambda-policy"
+  role   = aws_iam_role.notification_lambda.id
+  policy = data.aws_iam_policy_document.notification_lambda_permissions.json
+}
+
+# -----------------------------------------------------------------------------
+# Lambda de notificaciones (Python, sin dependencias: boto3 viene en el runtime)
+# -----------------------------------------------------------------------------
+
+data "archive_file" "notification_lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../notification-lambda"
+  output_path = "${path.module}/build/notification-lambda.zip"
+  excludes    = ["__pycache__", "README.md"]
+}
+
+resource "aws_lambda_function" "notification" {
+  function_name = local.notification_lambda_name
+  description   = "Consume la cola SQS de notificaciones y envia los correos con SES"
+  role          = aws_iam_role.notification_lambda.arn
+
+  runtime       = "python3.13"
+  handler       = "handler.handler"
+  architectures = ["arm64"]
+  memory_size   = 128
+  timeout       = var.notification_lambda_timeout_seconds
+
+  filename         = data.archive_file.notification_lambda.output_path
+  source_code_hash = data.archive_file.notification_lambda.output_base64sha256
+
+  environment {
+    variables = {
+      SENDER_EMAIL = var.notification_sender_email
+    }
+  }
+
+  logging_config {
+    log_format            = "JSON"
+    application_log_level = "INFO"
+    system_log_level      = "INFO"
+    log_group             = aws_cloudwatch_log_group.notification_lambda.name
+  }
+
+  depends_on = [
+    aws_iam_role_policy.notification_lambda,
+    aws_cloudwatch_log_group.notification_lambda,
+  ]
+}
+
+# -----------------------------------------------------------------------------
+# Event Source Mapping SQS -> Lambda
+# -----------------------------------------------------------------------------
+
+resource "aws_lambda_event_source_mapping" "notifications_sqs" {
+  event_source_arn = aws_sqs_queue.notifications.arn
+  function_name    = aws_lambda_function.notification.arn
+  enabled          = true
+
+  batch_size                         = 10
+  maximum_batching_window_in_seconds = 0
+
+  # La Lambda devuelve los mensajes que fallaron; solo esos vuelven a la cola.
+  function_response_types = ["ReportBatchItemFailures"]
+
+  scaling_config {
+    maximum_concurrency = 2
+  }
 }
