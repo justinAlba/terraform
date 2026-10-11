@@ -34,3 +34,7 @@ app:
   s3:
     bucket: ${S3_BUCKET:}
     prefix: ${S3_PREFIX:uploads/}
+  notifications:
+    # log = solo se registra (local / Docker), sns = topic SNS -> SQS -> Lambda de notificaciones
+    provider: ${NOTIFICATIONS_PROVIDER:log}
+    sns-topic-arn: ${SNS_TOPIC_ARN:}
