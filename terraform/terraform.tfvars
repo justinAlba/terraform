@@ -17,4 +17,6 @@ notification_lambda_name            = "notification-lambda"
 notification_lambda_timeout_seconds = 30
 # En el sandbox de SES el destinatario tambien debe estar verificado:
 # agrega aqui los correos de prueba (cada uno recibe un enlace de verificacion).
-notification_test_recipients = []
+notification_test_recipients = [
+  "jeremyvargas24.jrvu@gmail.com",
+]
