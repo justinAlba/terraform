@@ -127,7 +127,7 @@ switch ($Actividad) {
     }
 
     'estres' {
-        $niveles = $Niveles -split ',' | ForEach-Object { [int]$_.Trim() }
+        $listaNiveles = $Niveles -split ',' | ForEach-Object { [int]$_.Trim() }
         # Si quedan mensajes de una prueba anterior, el criterio de SQS se dispararia en falso.
         $c = Get-EstadoCola
         if ($c.visibles + $c.en_proceso -gt 0) {
@@ -136,7 +136,7 @@ switch ($Actividad) {
         }
         $ultimoEstable = 0
         $motivo = 'Se completaron todos los niveles sin degradacion'
-        foreach ($vus in $niveles) {
+        foreach ($vus in $listaNiveles) {
             $nombre = "04-estres-$vus"
             $codigo = Invoke-Prueba -Nombre $nombre -Vus $vus -Duracion '2m' -Rampa '30s' -Abortar
 
