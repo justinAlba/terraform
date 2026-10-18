@@ -51,12 +51,15 @@ function Invoke-Prueba {
     Write-Host "`n=== $Nombre : $Vus VUs durante $Duracion (rampa $Rampa) ===" -ForegroundColor Yellow
 
     $inicio = Get-UtcAhora
+    # k6 escribe sus avisos en stderr; con 'Stop', PowerShell 5.1 los trataria como error fatal.
+    $ErrorActionPreference = 'Continue'
     k6 run `
         -e API_URL=$env:API_URL -e NOMBRE=$Nombre -e VUS=$Vus -e DURACION=$Duracion `
         -e RAMPA=$Rampa -e ABORTAR=$($Abortar.IsPresent.ToString().ToLower()) `
         --out "csv=$dir/serie.csv.gz" `
-        carga.js
+        carga.js 2>&1 | ForEach-Object { "$_" } | Write-Host
     $codigo = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
     $fin = Get-UtcAhora
 
     @{ nombre = $Nombre; vus = $Vus; duracion = $Duracion; inicio_utc = $inicio; fin_utc = $fin; codigo_salida_k6 = $codigo } |
