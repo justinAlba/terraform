@@ -1,0 +1,21 @@
+{
+  "escenario": "01-linea-base",
+  "vus": 10,
+  "duracion": "1m",
+  "think_time_s": 1,
+  "fecha_fin": "2026-10-18T17:22:57.118Z",
+  "duracion_real_s": 62.824461721,
+  "requests": 521,
+  "throughput_rps": 8.292948092635198,
+  "latencia_ms": {
+    "promedio": 151.98442432437614,
+    "minimo": 102.643408,
+    "mediana": 117.973714,
+    "maximo": 2111.638504,
+    "p90": 134.222776,
+    "p95": 151.984526,
+    "p99": 1803.677582199999
+  },
+  "tasa_errores": 0,
+  "respuestas_429": 0
+}

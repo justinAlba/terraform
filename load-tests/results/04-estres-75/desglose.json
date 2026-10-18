@@ -1,0 +1,15 @@
+{
+  "codigos_http": {
+    "202": 9493,
+    "503": 6
+  },
+  "exitosas": 9493,
+  "rechazadas": 6,
+  "latencia_exitosas_ms": {
+    "promedio": 68.97628139450121,
+    "minimo": 47.492258,
+    "maximo": 1775.990172,
+    "p95": 83.370519,
+    "p99": 108.502016
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "inicio_utc": "2026-10-18T18:11:12Z",
+  "nombre": "04-estres-40",
+  "codigo_salida_k6": 0,
+  "duracion": "2m",
+  "fin_utc": "2026-10-18T18:13:43Z",
+  "vus": 40
+}

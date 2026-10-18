@@ -115,7 +115,7 @@ def descargar_metricas(inicio, fin):
             "etiqueta": res["Label"],
             "estadistica": stat,
             "agregado": total,
-            "serie": [[t.strftime("%Y-%m-%dT%H:%M:%SZ"), v] for t, v in zip(res["Timestamps"], valores)],
+            "serie": [[t.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), v] for t, v in zip(res["Timestamps"], valores)],
         }
     return salida
 
@@ -128,6 +128,8 @@ WIDGETS = {
     "sqs-edad": ("SQS - edad del mensaje mas antiguo y DLQ", ["sqs_age", "dlq_visible"]),
     "notification-lambda": ("Notification Lambda", ["notif_concurrency", "notif_invocations", "notif_errors", "notif_throttles"]),
     "notification-lambda-duracion": ("Notification Lambda - Duration", ["notif_duration"]),
+    "lambdas-concurrencia": ("Lambdas - Concurrent Executions (limite de la cuenta: 10)", ["api_concurrency", "notif_concurrency"]),
+    "lambdas-throttles": ("Lambdas - Throttles", ["api_throttles", "notif_throttles"]),
     "lambda-api-latencia": ("API Gateway / Lambda - latencias (ms)", ["gw_latency", "gw_latency_p95", "gw_integration", "api_duration"]),
 }
 
@@ -234,7 +236,9 @@ def main():
         print(f"Evidencias: {titulo} ({inicio:%H:%M} - {fin:%H:%M} UTC)")
         for archivo, (nombre_widget, ids) in WIDGETS.items():
             imagen_widget(f"{nombre_widget} | {titulo}", ids, inicio, fin, carpeta / f"{archivo}.png")
-        (carpeta / "logs.json").write_text(json.dumps(consultar_logs(inicio, fin), indent=2, ensure_ascii=False), encoding="utf-8")
+        # Los logs tienen marca de tiempo exacta: se consultan sin margen para no mezclar actividades.
+        exacto = (min(w[0] for w in grupo), max(w[1] for w in grupo))
+        (carpeta / "logs.json").write_text(json.dumps(consultar_logs(*exacto), indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 if __name__ == "__main__":

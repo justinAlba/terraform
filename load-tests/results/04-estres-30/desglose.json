@@ -1,0 +1,14 @@
+{
+  "codigos_http": {
+    "202": 3794
+  },
+  "exitosas": 3794,
+  "rechazadas": 0,
+  "latencia_exitosas_ms": {
+    "promedio": 70.54970075408539,
+    "minimo": 54.290479,
+    "maximo": 992.006455,
+    "p95": 83.597463,
+    "p99": 107.005198
+  }
+}

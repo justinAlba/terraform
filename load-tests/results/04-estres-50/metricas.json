@@ -1,0 +1,21 @@
+{
+  "escenario": "04-estres-50",
+  "vus": 50,
+  "duracion": "2m",
+  "think_time_s": 1,
+  "fecha_fin": "2026-10-18T18:20:54.926Z",
+  "duracion_real_s": 151.319568134,
+  "requests": 6340,
+  "throughput_rps": 41.89808415515471,
+  "latencia_ms": {
+    "promedio": 67.74315600488954,
+    "minimo": 48.557423,
+    "mediana": 66.42579549999999,
+    "maximo": 1015.2534,
+    "p90": 76.1652449,
+    "p95": 81.13703364999999,
+    "p99": 105.90871655999992
+  },
+  "tasa_errores": 0,
+  "respuestas_429": 0
+}

@@ -73,27 +73,104 @@ def escenarios(prefijo):
     return sorted(datos, key=lambda m: m["vus"])
 
 
+def percentil(valores, p):
+    return valores[min(len(valores) - 1, int(round(p / 100 * (len(valores) - 1))))] if valores else 0
+
+
+def desglose(escenario):
+    """Separa respuestas exitosas (2xx) de rechazadas a partir del CSV crudo de k6.
+
+    El promedio global de k6 mezcla los 503 de throttling (muy rapidos) con las
+    respuestas reales; para analizar la latencia se usan solo las exitosas.
+    """
+    archivo = RESULTADOS / escenario / "serie.csv.gz"
+    cache = RESULTADOS / escenario / "desglose.json"
+    if cache.exists():
+        return leer(cache)
+    if not archivo.exists():
+        return None
+    ok, codigos = [], defaultdict(int)
+    with gzip.open(archivo, "rt", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            if r["metric_name"] != "http_req_duration" or "notifications" not in r.get("name", ""):
+                continue
+            codigos[r["status"]] += 1
+            if r["status"].startswith("2"):
+                ok.append(float(r["metric_value"]))
+    ok.sort()
+    total = sum(codigos.values())
+    d = {
+        "codigos_http": dict(codigos),
+        "exitosas": len(ok),
+        "rechazadas": total - len(ok),
+        "latencia_exitosas_ms": {
+            "promedio": sum(ok) / len(ok) if ok else 0,
+            "minimo": ok[0] if ok else 0,
+            "maximo": ok[-1] if ok else 0,
+            "p95": percentil(ok, 95),
+            "p99": percentil(ok, 99),
+        },
+    }
+    cache.write_text(json.dumps(d, indent=2), encoding="utf-8")
+    return d
+
+
 def etiqueta_final(ax, x, y, texto, color):
     ax.annotate(texto, (x, y), xytext=(6, 0), textcoords="offset points", va="center", color=TEXTO, fontsize=9)
     ax.plot([], [], color=color)
 
 
 def grafica_latencia(datos, nombre, titulo):
-    vus = [m["vus"] for m in datos]
+    """Latencia de las respuestas exitosas (202) por nivel de usuarios."""
+    vus = [str(m["vus"]) for m in datos]
+    x = range(len(datos))
+    lat = [(desglose(m["escenario"]) or {}).get("latencia_exitosas_ms") or m["latencia_ms"] for m in datos]
     fig, ax = plt.subplots(figsize=(8, 4.5))
+    maximo = 0
     for clave, etiqueta, color in (("promedio", "Promedio", AZUL), ("p95", "P95", NARANJA), ("p99", "P99", AQUA)):
-        ys = [m["latencia_ms"][clave] for m in datos]
-        ax.plot(vus, ys, marker="o", color=color, label=etiqueta, markeredgecolor=SUPERFICIE, markeredgewidth=2)
-        etiqueta_final(ax, vus[-1], ys[-1], f"{etiqueta} {ys[-1]:,.0f} ms", color)
-    ax.axhline(5000, color=CRITICO, linewidth=1, linestyle="--")
-    ax.annotate("Limite 5 s", (vus[0], 5000), xytext=(0, 4), textcoords="offset points", color=TEXTO_2, fontsize=9)
-    ax.set_xticks(vus)
+        ys = [l[clave] for l in lat]
+        maximo = max(maximo, *ys)
+        ax.plot(x, ys, marker="o", color=color, label=etiqueta, markeredgecolor=SUPERFICIE, markeredgewidth=2)
+    for i, l in enumerate(lat):
+        ax.annotate(f"{l['p99']:,.0f}", (i, l["p99"]), xytext=(0, 8), textcoords="offset points", ha="center",
+                    color=TEXTO, fontsize=9)
+    if maximo > 2500:
+        ax.axhline(5000, color=CRITICO, linewidth=1, linestyle="--")
+        ax.annotate("Limite 5 s", (0, 5000), xytext=(0, 4), textcoords="offset points", color=TEXTO_2, fontsize=9)
+    ax.set_xticks(list(x), vus)
     ax.set_xlabel("Usuarios virtuales concurrentes")
     ax.set_ylabel("Tiempo de respuesta (ms)")
+    ax.set_ylim(0, maximo * 1.3)
     ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.set_title(titulo + " (solo respuestas exitosas)")
+    ax.legend(loc="lower right", ncol=3)
+    fig.savefig(SALIDA / nombre)
+    plt.close(fig)
+
+
+def grafica_throughput(datos, nombre, titulo):
+    """Requests/s apilados: exitosas (202) y rechazadas (503 por throttling)."""
+    vus = [str(m["vus"]) for m in datos]
+    exit_rps, rech_rps = [], []
+    for m in datos:
+        d = desglose(m["escenario"])
+        dur = m["requests"] / m["throughput_rps"] if m["throughput_rps"] else 1
+        exit_rps.append((d["exitosas"] if d else m["requests"] * (1 - m["tasa_errores"])) / dur)
+        rech_rps.append((d["rechazadas"] if d else m["requests"] * m["tasa_errores"]) / dur)
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    ax.bar(vus, exit_rps, color=AZUL, width=0.55, edgecolor=SUPERFICIE, linewidth=2, label="Exitosas (202)")
+    ax.bar(vus, rech_rps, bottom=exit_rps, color=NARANJA, width=0.55, edgecolor=SUPERFICIE, linewidth=2,
+           label="Rechazadas (503 por throttling)")
+    for i, (e, r) in enumerate(zip(exit_rps, rech_rps)):
+        ax.annotate(f"{e:,.0f} ok/s", (i, e / 2), ha="center", va="center", color="white", fontsize=9, fontweight="bold")
+        ax.annotate(f"{e + r:,.0f}", (i, e + r), xytext=(0, 4), textcoords="offset points", ha="center",
+                    color=TEXTO, fontsize=9)
+    ax.grid(axis="x", visible=False)
+    ax.set_xlabel("Usuarios virtuales concurrentes")
+    ax.set_ylabel("Requests por segundo")
+    ax.set_ylim(0, max(e + r for e, r in zip(exit_rps, rech_rps)) * 1.15)
     ax.set_title(titulo)
-    ax.legend(loc="upper left", ncol=3)
-    ax.set_xlim(right=vus[-1] * 1.25)
+    ax.legend(loc="upper left")
     fig.savefig(SALIDA / nombre)
     plt.close(fig)
 
@@ -205,6 +282,7 @@ def grafica_cloudwatch_recuperacion():
     x, y = serie("sqs_visible")
     a1.plot(x, y, color=AZUL, marker="o", markersize=5)
     a1.set_ylabel("Mensajes visibles")
+    a1.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
     a1.set_title("Actividad 5 (CloudWatch): cola SQS y concurrencia de las Lambdas")
     for mid, etiqueta, color in (("api_concurrency", "Lambda principal", AZUL), ("notif_concurrency", "Notification Lambda", NARANJA)):
         x, y = serie(mid)
@@ -221,15 +299,19 @@ def grafica_cloudwatch_recuperacion():
 
 def tabla(todos):
     filas = [
-        "| Escenario | VUs | Requests | Throughput (req/s) | Promedio (ms) | Min (ms) | Max (ms) | P95 (ms) | P99 (ms) | Errores | 429 |",
-        "|---|---|---|---|---|---|---|---|---|---|---|",
+        "| Escenario | VUs | Requests | Throughput (req/s) | Exitosas/s | Promedio (ms) | Min (ms) | Max (ms) "
+        "| P95 (ms) | P99 (ms) | Errores | Codigos HTTP |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for m in todos:
         l = m["latencia_ms"]
+        d = desglose(m["escenario"])
+        codigos = ", ".join(f"{k}: {v:,}" for k, v in sorted(d["codigos_http"].items())) if d else "-"
         filas.append(
-            f"| {m['escenario']} | {m['vus']} | {m['requests']:,} | {m['throughput_rps']:.1f} | {l['promedio']:,.0f} | "
+            f"| {m['escenario']} | {m['vus']} | {m['requests']:,} | {m['throughput_rps']:.1f} | "
+            f"{m['throughput_rps'] * (1 - m['tasa_errores']):.1f} | {l['promedio']:,.0f} | "
             f"{l['minimo']:,.0f} | {l['maximo']:,.0f} | {l['p95']:,.0f} | {l['p99']:,.0f} | "
-            f"{m['tasa_errores'] * 100:.2f} % | {m['respuestas_429']} |"
+            f"{m['tasa_errores'] * 100:.2f} % | {codigos} |"
         )
     (SALIDA / "tabla-resultados.md").write_text("\n".join(filas) + "\n", encoding="utf-8")
 
@@ -243,8 +325,7 @@ def main():
         if len(datos) < 2:
             continue
         grafica_latencia(datos, f"{sufijo}-latencia.png", f"{titulo}: latencia por numero de usuarios")
-        grafica_barras(datos, lambda m: m["throughput_rps"], f"{sufijo}-throughput.png",
-                       f"{titulo}: throughput por numero de usuarios", "Requests por segundo", lambda v: f"{v:,.0f}")
+        grafica_throughput(datos, f"{sufijo}-throughput.png", f"{titulo}: throughput por numero de usuarios")
         grafica_barras(datos, lambda m: m["tasa_errores"] * 100, f"{sufijo}-errores.png",
                        f"{titulo}: tasa de errores por numero de usuarios", "Errores (%)", lambda v: f"{v:.1f} %", umbral=5)
     todos = escenarios("01-") + todos + escenarios("05-")

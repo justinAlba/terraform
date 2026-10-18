@@ -1,0 +1,8 @@
+{
+  "inicio_utc": "2026-10-18T17:30:39Z",
+  "codigo_salida_k6": 99,
+  "nombre": "02-progresivo-250",
+  "duracion": "2m",
+  "fin_utc": "2026-10-18T17:32:41Z",
+  "vus": 250
+}

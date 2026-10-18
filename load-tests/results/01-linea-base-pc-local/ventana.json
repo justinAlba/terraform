@@ -1,0 +1,8 @@
+﻿{
+    "vus":  10,
+    "nombre":  "01-linea-base",
+    "fin_utc":  "2026-10-18T16:41:28Z",
+    "duracion":  "1m",
+    "codigo_salida_k6":  99,
+    "inicio_utc":  "2026-10-18T16:40:16Z"
+}

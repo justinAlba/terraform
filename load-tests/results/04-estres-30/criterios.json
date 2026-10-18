@@ -1,0 +1,9 @@
+{
+  "vus": 30,
+  "tasa_errores": 0,
+  "p95_ms": 83.6213932,
+  "throttles_lambda": 0.0,
+  "edad_max_mensaje_sqs_s": 104.0,
+  "mensajes_en_cola": 649,
+  "k6_abortado": false
+}

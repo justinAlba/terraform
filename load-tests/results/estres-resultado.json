@@ -1,0 +1,4 @@
+{
+  "motivo_parada": "Degradacion en 75 VUs: throttling en Lambda (7); SQS saturada (mensaje mas antiguo: 353 s)",
+  "ultimo_nivel_estable": 50
+}

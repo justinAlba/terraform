@@ -1,0 +1,21 @@
+{
+  "escenario": "05-recuperacion",
+  "vus": 100,
+  "duracion": "3m",
+  "think_time_s": 1,
+  "fecha_fin": "2026-10-18T18:43:47.864Z",
+  "duracion_real_s": 212.669743134,
+  "requests": 18017,
+  "throughput_rps": 84.71821019056651,
+  "latencia_ms": {
+    "promedio": 85.41565807437397,
+    "minimo": 56.463893,
+    "mediana": 86.247873,
+    "maximo": 1095.25743,
+    "p90": 95.2534314,
+    "p95": 100.81777,
+    "p99": 127.52118968000003
+  },
+  "tasa_errores": 0.17061663984015096,
+  "respuestas_429": 0
+}

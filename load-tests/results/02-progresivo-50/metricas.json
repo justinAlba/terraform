@@ -1,0 +1,21 @@
+{
+  "escenario": "02-progresivo-50",
+  "vus": 50,
+  "duracion": "2m",
+  "think_time_s": 1,
+  "fecha_fin": "2026-10-18T17:25:37.719Z",
+  "duracion_real_s": 121.256252836,
+  "requests": 5290,
+  "throughput_rps": 43.62661616432074,
+  "latencia_ms": {
+    "promedio": 136.66297575292964,
+    "minimo": 59.319364,
+    "mediana": 91.553612,
+    "maximo": 13516.988441,
+    "p90": 100.5387463,
+    "p95": 106.1589148,
+    "p99": 142.27040371999993
+  },
+  "tasa_errores": 0.07599243856332703,
+  "respuestas_429": 0
+}

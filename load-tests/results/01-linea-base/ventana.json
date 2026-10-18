@@ -1,0 +1,8 @@
+{
+  "codigo_salida_k6": 0,
+  "inicio_utc": "2026-10-18T17:21:54Z",
+  "vus": 10,
+  "duracion": "1m",
+  "fin_utc": "2026-10-18T17:22:57Z",
+  "nombre": "01-linea-base"
+}

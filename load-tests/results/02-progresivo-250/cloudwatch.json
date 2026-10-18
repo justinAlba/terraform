@@ -1,0 +1,477 @@
+{
+  "gw_count": {
+    "etiqueta": "API Gateway - Request Count",
+    "estadistica": "Sum",
+    "agregado": 28215.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        4751.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        13998.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        9466.0
+      ]
+    ]
+  },
+  "gw_latency": {
+    "etiqueta": "API Gateway - Latency avg (ms)",
+    "estadistica": "Average",
+    "agregado": 13.920905709545485,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        12.114923174068617
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        14.067295327903986
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        15.58049862666385
+      ]
+    ]
+  },
+  "gw_latency_p95": {
+    "etiqueta": "API Gateway - Latency p95 (ms)",
+    "estadistica": "p95",
+    "agregado": 36.132611037885596,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        35.71135937387722
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        36.01791489911936
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        36.132611037885596
+      ]
+    ]
+  },
+  "gw_integration": {
+    "etiqueta": "API Gateway - Integration Latency avg (ms)",
+    "estadistica": "Average",
+    "agregado": 12.207221262264584,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        10.365396758577141
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        12.381768824117731
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        13.874498204098881
+      ]
+    ]
+  },
+  "gw_4xx": {
+    "etiqueta": "API Gateway - 4XX",
+    "estadistica": "Sum",
+    "agregado": 0.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        0.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        0.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        0.0
+      ]
+    ]
+  },
+  "gw_5xx": {
+    "etiqueta": "API Gateway - 5XX",
+    "estadistica": "Sum",
+    "agregado": 21717.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        4267.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        10849.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        6601.0
+      ]
+    ]
+  },
+  "api_invocations": {
+    "etiqueta": "Lambda API - Invocations",
+    "estadistica": "Sum",
+    "agregado": 6498.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        484.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        3149.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        2865.0
+      ]
+    ]
+  },
+  "api_duration": {
+    "etiqueta": "Lambda API - Duration avg (ms)",
+    "estadistica": "Average",
+    "agregado": 22.511870419364488,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        24.234400826033042
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        21.880676403334423
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        21.42053402872601
+      ]
+    ]
+  },
+  "api_duration_max": {
+    "etiqueta": "Lambda API - Duration max (ms)",
+    "estadistica": "Maximum",
+    "agregado": 238.11,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        238.11
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        101.3
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        158.57
+      ]
+    ]
+  },
+  "api_errors": {
+    "etiqueta": "Lambda API - Errors",
+    "estadistica": "Sum",
+    "agregado": 0.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        0.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        0.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        0.0
+      ]
+    ]
+  },
+  "api_throttles": {
+    "etiqueta": "Lambda API - Throttles",
+    "estadistica": "Sum",
+    "agregado": 21717.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        4267.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        10849.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        6601.0
+      ]
+    ]
+  },
+  "api_concurrency": {
+    "etiqueta": "Lambda API - Concurrent Executions",
+    "estadistica": "Maximum",
+    "agregado": 10.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        10.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        10.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        10.0
+      ]
+    ]
+  },
+  "sns_published": {
+    "etiqueta": "SNS - NumberOfMessagesPublished",
+    "estadistica": "Sum",
+    "agregado": 6497.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        483.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        3149.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        2865.0
+      ]
+    ]
+  },
+  "sns_delivered": {
+    "etiqueta": "SNS - NumberOfNotificationsDelivered",
+    "estadistica": "Sum",
+    "agregado": 6497.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        483.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        3149.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        2865.0
+      ]
+    ]
+  },
+  "sns_failed": {
+    "etiqueta": "SNS - NumberOfNotificationsFailed",
+    "estadistica": "Sum",
+    "agregado": 0.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        0.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        0.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        0.0
+      ]
+    ]
+  },
+  "sqs_sent": {
+    "etiqueta": "SQS - NumberOfMessagesSent",
+    "estadistica": "Sum",
+    "agregado": 6497.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        483.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        3149.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        2865.0
+      ]
+    ]
+  },
+  "sqs_deleted": {
+    "etiqueta": "SQS - NumberOfMessagesDeleted",
+    "estadistica": "Sum",
+    "agregado": 1190.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        560.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        300.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        330.0
+      ]
+    ]
+  },
+  "sqs_visible": {
+    "etiqueta": "SQS - ApproximateNumberOfMessagesVisible",
+    "estadistica": "Maximum",
+    "agregado": 9182.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        6256.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        5906.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        9182.0
+      ]
+    ]
+  },
+  "sqs_age": {
+    "etiqueta": "SQS - ApproximateAgeOfOldestMessage (s)",
+    "estadistica": "Maximum",
+    "agregado": 397.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        296.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        332.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        397.0
+      ]
+    ]
+  },
+  "dlq_visible": {
+    "etiqueta": "DLQ - mensajes",
+    "estadistica": "Maximum",
+    "agregado": 1.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        1.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        1.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        1.0
+      ]
+    ]
+  },
+  "notif_concurrency": {
+    "etiqueta": "Notification Lambda - Concurrent Executions",
+    "estadistica": "Maximum",
+    "agregado": 2.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        2.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        2.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        2.0
+      ]
+    ]
+  },
+  "notif_invocations": {
+    "etiqueta": "Notification Lambda - Invocations",
+    "estadistica": "Sum",
+    "agregado": 120.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        56.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        29.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        35.0
+      ]
+    ]
+  },
+  "notif_duration": {
+    "etiqueta": "Notification Lambda - Duration avg (ms)",
+    "estadistica": "Average",
+    "agregado": 1007.1554726009853,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        1006.8807142857141
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        1007.2182755172412
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        1007.3674280000002
+      ]
+    ]
+  },
+  "notif_errors": {
+    "etiqueta": "Notification Lambda - Errors",
+    "estadistica": "Sum",
+    "agregado": 0.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        0.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        0.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        0.0
+      ]
+    ]
+  },
+  "notif_throttles": {
+    "etiqueta": "Notification Lambda - Throttles",
+    "estadistica": "Sum",
+    "agregado": 28.0,
+    "serie": [
+      [
+        "2026-10-18T17:30:00Z",
+        6.0
+      ],
+      [
+        "2026-10-18T17:31:00Z",
+        13.0
+      ],
+      [
+        "2026-10-18T17:32:00Z",
+        9.0
+      ]
+    ]
+  }
+}
