@@ -93,6 +93,18 @@ variable "notification_sender_email" {
   }
 }
 
+variable "load_test_mode" {
+  description = "Pruebas de carga: los correos a @test.com no se envian por SES, se simula su latencia."
+  type        = bool
+  default     = false
+}
+
+variable "simulated_ses_ms" {
+  description = "Latencia simulada de SES (ms) cuando load_test_mode esta activo."
+  type        = number
+  default     = 100
+}
+
 variable "notification_test_recipients" {
   description = "Destinatarios a verificar en SES. Mientras la cuenta este en el sandbox de SES solo se puede enviar a correos verificados."
   type        = list(string)

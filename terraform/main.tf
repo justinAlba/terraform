@@ -437,7 +437,9 @@ resource "aws_lambda_function" "notification" {
 
   environment {
     variables = {
-      SENDER_EMAIL = var.notification_sender_email
+      SENDER_EMAIL     = var.notification_sender_email
+      LOAD_TEST_MODE   = tostring(var.load_test_mode)
+      SIMULATED_SES_MS = tostring(var.simulated_ses_ms)
     }
   }
 

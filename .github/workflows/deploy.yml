@@ -1,10 +1,13 @@
 name: Deploy Serverless (Terraform + Lambda)
 
 on:
+  # Los scripts y resultados de las pruebas de carga no cambian la infraestructura.
   push:
     branches: [main]
+    paths-ignore: ["load-tests/**"]
   pull_request:
     branches: [main]
+    paths-ignore: ["load-tests/**"]
   workflow_dispatch:
 
 permissions:

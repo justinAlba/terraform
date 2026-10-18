@@ -56,3 +56,8 @@ output "cloudwatch_logs_url" {
   description = "Acceso directo a los logs de la Lambda en la consola."
   value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#logsV2:log-groups/log-group/${replace(aws_cloudwatch_log_group.lambda.name, "/", "$252F")}"
 }
+
+output "dashboard_pruebas_carga_url" {
+  description = "Dashboard de CloudWatch con las metricas de las pruebas de carga."
+  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards/dashboard/${aws_cloudwatch_dashboard.pruebas_carga.dashboard_name}"
+}

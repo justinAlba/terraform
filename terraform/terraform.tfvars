@@ -20,3 +20,11 @@ notification_lambda_timeout_seconds = 30
 notification_test_recipients = [
   "jeremyvargas24.jrvu@gmail.com",
 ]
+
+# ---------------------------------------------------------------------------
+# PRUEBAS DE CARGA (temporal). Al terminar las pruebas, borrar este bloque para
+# volver a los valores por defecto: 20 req/s, rafaga 50 y SES real.
+# ---------------------------------------------------------------------------
+throttling_rate_limit  = 3000
+throttling_burst_limit = 3000
+load_test_mode         = true

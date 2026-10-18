@@ -1,0 +1,4 @@
+# Series de tiempo crudas de k6 (pueden pesar cientos de MB en el estres).
+# Los resumenes (summary.json, metricas.json), ventanas y graficas si se versionan.
+results/**/serie.csv.gz
+results/00-humo/
