@@ -6,6 +6,7 @@
   .\pruebas.ps1 linea-base      # Actividad 1: 10 VUs, 1 min
   .\pruebas.ps1 progresivo      # Actividad 2: 50/100/250/500 VUs, 2 min cada uno
   .\pruebas.ps1 estres          # Actividad 4: sube hasta el punto de degradacion
+  .\pruebas.ps1 estres -Niveles '20,30,40,50'   # niveles personalizados
   .\pruebas.ps1 recuperacion    # Actividad 5: carga alta, corte y vaciado de SQS
   .\pruebas.ps1 humo            # 2 VUs, 15 s: verifica que todo responde
 
@@ -21,7 +22,10 @@ param(
     # de la prueba de estres (leido de results/estres-resultado.json).
     [int]$VusRecuperacion = 0,
 
-    [int]$PausaEntreEscenarios = 90
+    [int]$PausaEntreEscenarios = 90,
+
+    # Actividad 4: niveles de VUs separados por coma (default: los de la asignacion).
+    [string]$Niveles = '100,250,500,750,1000,1500,2000'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -122,7 +126,13 @@ switch ($Actividad) {
     }
 
     'estres' {
-        $niveles = 100, 250, 500, 750, 1000, 1500, 2000
+        $niveles = $Niveles -split ',' | ForEach-Object { [int]$_.Trim() }
+        # Si quedan mensajes de una prueba anterior, el criterio de SQS se dispararia en falso.
+        $c = Get-EstadoCola
+        if ($c.visibles + $c.en_proceso -gt 0) {
+            Write-Host 'La cola no esta vacia; se espera a que se vacie antes de empezar.'
+            Wait-ColaVacia -Archivo 'results/04-pre-vaciado.csv' | Out-Null
+        }
         $ultimoEstable = 0
         $motivo = 'Se completaron todos los niveles sin degradacion'
         foreach ($vus in $niveles) {

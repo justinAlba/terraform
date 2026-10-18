@@ -13,6 +13,10 @@ on:
         required: true
         default: linea-base
         options: [humo, linea-base, progresivo, estres, recuperacion]
+      niveles:
+        description: "Actividad 4: niveles de VUs separados por coma"
+        type: string
+        default: "100,250,500,750,1000,1500,2000"
       vus_recuperacion:
         description: "Actividad 5: VUs de la carga alta (0 = 500)"
         type: string
@@ -52,9 +56,12 @@ jobs:
         env:
           ACTIVIDAD: ${{ inputs.actividad }}
           VUS_RECUPERACION: ${{ inputs.vus_recuperacion }}
+          NIVELES: ${{ inputs.niveles }}
         run: |
           k6 version
-          ./pruebas.ps1 $env:ACTIVIDAD -VusRecuperacion ([int]$env:VUS_RECUPERACION)
+          ./pruebas.ps1 $env:ACTIVIDAD -VusRecuperacion ([int]$env:VUS_RECUPERACION) -Niveles $env:NIVELES
+          # Los thresholds de k6 (exit 99) ya quedan registrados en los resultados; no son un fallo del job.
+          exit 0
 
       - name: Resumen de resultados
         if: always()
