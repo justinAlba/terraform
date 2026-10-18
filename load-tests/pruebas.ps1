@@ -30,6 +30,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
+New-Item -ItemType Directory -Force 'results' | Out-Null
 
 # ---------------------------------------------------------------- Recursos AWS
 $Prefijo = 'actividad-api-prod'
