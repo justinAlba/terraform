@@ -1,0 +1,87 @@
+name: Pruebas de carga (k6)
+
+# Se ejecuta a mano: Actions -> "Pruebas de carga (k6)" -> Run workflow,
+# o con: gh workflow run load-test.yml -f actividad=linea-base
+# Corre k6 desde un runner de GitHub (red estable) contra la API desplegada
+# y publica los resultados como artefacto y en el resumen del job.
+on:
+  workflow_dispatch:
+    inputs:
+      actividad:
+        description: "Actividad de la asignacion"
+        type: choice
+        required: true
+        default: linea-base
+        options: [humo, linea-base, progresivo, estres, recuperacion]
+      vus_recuperacion:
+        description: "Actividad 5: VUs de la carga alta (0 = 500)"
+        type: string
+        default: "0"
+
+permissions:
+  contents: read
+
+# Nunca dos pruebas a la vez: se mezclarian sus metricas en CloudWatch.
+concurrency:
+  group: load-test
+  cancel-in-progress: false
+
+jobs:
+  k6:
+    name: k6 - ${{ inputs.actividad }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    defaults:
+      run:
+        working-directory: load-tests
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Ejecutar prueba
+        env:
+          ACTIVIDAD: ${{ inputs.actividad }}
+          VUS_RECUPERACION: ${{ inputs.vus_recuperacion }}
+        run: |
+          k6 version
+          ./pruebas.ps1 $env:ACTIVIDAD -VusRecuperacion ([int]$env:VUS_RECUPERACION)
+
+      - name: Resumen de resultados
+        if: always()
+        run: |
+          $filas = Get-ChildItem results -Recurse -Filter metricas.json | Sort-Object FullName | ForEach-Object {
+            $m = Get-Content $_.FullName | ConvertFrom-Json
+            $l = $m.latencia_ms
+            "| {0} | {1} | {2} | {3:N1} | {4:N0} | {5:N0} | {6:N0} | {7:N0} | {8:N0} | {9:P2} |" -f `
+              $m.escenario, $m.vus, $m.requests, $m.throughput_rps, $l.promedio, $l.minimo, $l.maximo, $l.p95, $l.p99, $m.tasa_errores
+          }
+          @(
+            "## Resultados k6 - $env:ACTIVIDAD"
+            ''
+            '| Escenario | VUs | Requests | RPS | Prom. (ms) | Min (ms) | Max (ms) | P95 (ms) | P99 (ms) | Errores |'
+            '|---|---|---|---|---|---|---|---|---|---|'
+            $filas
+          ) | Add-Content $env:GITHUB_STEP_SUMMARY
+          foreach ($extra in 'results/estres-resultado.json', 'results/05-recuperacion/recuperacion.json') {
+            if (Test-Path $extra) {
+              @('', "### $(Split-Path $extra -Leaf)", '```json', (Get-Content $extra -Raw), '```') | Add-Content $env:GITHUB_STEP_SUMMARY
+            }
+          }
+
+      - name: Publicar resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-${{ inputs.actividad }}
+          path: load-tests/results/
+          retention-days: 30
