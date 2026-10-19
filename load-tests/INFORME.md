@@ -175,7 +175,7 @@ Métricas por escenario descargadas de CloudWatch con [`scripts/cloudwatch.py`](
 - **SQS:** `NumberOfMessagesSent` = SNS Published. `NumberOfMessagesDeleted` se mantiene **plano en ~700/min (~11,6 msg/s)** aunque `Sent` llegue a 4.000/min: es la capacidad máxima del consumidor. `ApproximateNumberOfMessagesVisible` crece desde **20 VUs** (16,5 msg/s entrantes contra ~11,6 procesados).
 - **Notification Lambda:** concurrencia fija en **2** (el `maximum_concurrency` del event source mapping). Duración ~1 s por lote de 10 mensajes (10 × 100 ms de SES simulado). `Errors = 0`. Tuvo **throttles** (hasta 41 por escenario) porque comparte el límite de 10 con la Lambda principal.
 
-**CloudWatch Logs (Logs Insights, consultas en `evidencias/*/logs.json`):**
+**CloudWatch Logs (Logs Insights):**
 
 | Actividad | API GW 202 | API GW 503 | Lambda: invocaciones / duración media / P95 | Notification Lambda: lotes / mensajes OK / con error | Lote medio |
 |---|---|---|---|---|---|
@@ -186,10 +186,7 @@ Métricas por escenario descargadas de CloudWatch con [`scripts/cloudwatch.py`](
 
 (En la Actividad 2, la ventana de logs termina con la carga: los 10.774 mensajes que quedaban en la cola se procesaron después, en 943 s (~11,4 msg/s), ver `results/04-pre-vaciado.csv`.) No aparecieron excepciones en los logs de ninguna Lambda. El tamaño medio del lote sube de 1,6 a ~10 cuando la cola se acumula: el consumidor siempre trabaja a su máximo.
 
-Las evidencias gráficas de CloudWatch por actividad y servicio están en [`evidencias/`](evidencias/) y en el dashboard **`actividad-api-prod-pruebas-carga`**.
-
-![SQS estrés](evidencias/04-estres/sqs.png)
-![Concurrencia progresivo](evidencias/02-incremento-progresivo/lambdas-concurrencia.png)
+Las gráficas de CloudWatch de cada servicio se pueden consultar en el dashboard **`actividad-api-prod-pruebas-carga`**.
 
 ### 4.4 Actividad 4: prueba de estrés
 
@@ -319,7 +316,7 @@ cd load-tests
 .\pruebas.ps1 progresivo                         # Actividad 2
 .\pruebas.ps1 estres -Niveles '20,30,40,50,75,100'   # Actividad 4
 .\pruebas.ps1 recuperacion -VusRecuperacion 100  # Actividad 5
-python scripts/cloudwatch.py                     # Actividad 3: métricas, evidencias y logs
+python scripts/cloudwatch.py                     # Actividad 3: métricas de CloudWatch y logs
 python scripts/graficas.py                       # gráficas y tabla
 ```
 
@@ -328,5 +325,4 @@ O desde GitHub: **Actions → "Pruebas de carga (k6)" → Run workflow** (`gh wo
 | Carpeta | Contenido |
 |---|---|
 | `results/<escenario>/` | `metricas.json` (resumen), `summary.json` (k6 completo), `cloudwatch.json`, `ventana.json` (horas UTC), `criterios.json` (estrés) |
-| `evidencias/<actividad>/` | Gráficas de CloudWatch por servicio (PNG) y consultas de Logs Insights (`logs.json`) |
 | `graficas/` | Gráficas de rendimiento y tabla de resultados |

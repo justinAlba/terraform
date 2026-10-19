@@ -2,3 +2,6 @@
 # Los resumenes (summary.json, metricas.json), ventanas y graficas si se versionan.
 results/**/serie.csv.gz
 results/00-humo/
+
+# Evidencias de CloudWatch: se entregan aparte, no se publican en el repositorio.
+evidencias/
